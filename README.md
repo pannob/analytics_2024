@@ -1,4 +1,4 @@
-# Philip's Personal Projects 
+# Philip's Projects 
 
 ## 1) Machine Learning: Multiple Linear Regression
 
