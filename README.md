@@ -6,6 +6,6 @@ Regression analysis determining the relationship between in game (MMO) activitie
 Contains start to finish machine learning process as well as action points for the relevant stakeholders (game design)
 
 - Python based
--   - data transformation: numpy/pandas
+    - data transformation: numpy/pandas
     - visualisation: seaborn/plotly
     - regression analysis: sklearn
