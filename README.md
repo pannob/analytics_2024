@@ -4,7 +4,7 @@
 
 File Name: minutes_played_vs_activities_2024.ipynb
 
-Regression analysis exploring the relationship between in game (MMO) activities and minutes played for players.
+Regression analysis exploring the relationship between in **game (MMO)** activities and minutes played for players.
 Preprocessing and fields engineered prior to ask in SQL, some pseudo data was generated - 
 more a task to explore my thought process behind a regression analysis relevant to my previous work. 
 
@@ -17,7 +17,7 @@ more a task to explore my thought process behind a regression analysis relevant 
 
 File Name: student_dataset_random_forest.ipynb
 
-Classification task using a kaggle dataset - predicting pass/fail based on selected features.
+Classification task using a kaggle dataset - predicting pass/fail for **student assignments** based on selected features.
 Full Machine Learning process - preprocessing, exploratory analysis and feature engineering.
 Initially used random forest with attempted tuning - XGB added on to attempt improved prediction.
 
