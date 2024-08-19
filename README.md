@@ -15,3 +15,8 @@ process behind a regression analysis relevant to my previous work.
 
 ## 2) Machine Learning: Random Forest and XGBoost Classification
 
+File Name: student_dataset_random_forest.ipynb
+
+Classification task using a kaggle dataset - predicting pass/fail based on selected features.
+Full Machine Learning process - preprocessing, exploratory analysis and feature engineering.
+Initially used random forest with attempted tuning - XGB added on to attempt improved prediction.
