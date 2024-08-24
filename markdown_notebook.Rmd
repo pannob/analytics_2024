@@ -1,0 +1,551 @@
+---
+title: "Visualising the Data Job Market: 2024"
+output: 
+  flexdashboard::flex_dashboard:
+---
+
+```{r setup, include=FALSE}
+# import libraries
+
+library(flexdashboard)
+library(tidyverse)
+library(highcharter)
+library(gt)
+library(viridis)
+library(dplyr)
+library(RColorBrewer)
+library(countrycode)
+library(plotrix)
+```
+
+```{r}
+# import data
+
+df <- read_csv('jobs_in_data.csv', show_col_types = FALSE)
+```
+
+```{r}
+# grouping countries to manage sparse data
+
+df <- df%>%
+  mutate(country_group = case_when(employee_residence == 'United States' ~ 'United States',
+                                   employee_residence == "United Kingdom" ~ "United Kingdom",
+  TRUE ~ 'Other'))
+
+# dropping unecessary salary information
+
+df <- df%>%
+    select(-salary_currency, -salary)
+```
+
+```{r}
+# creating a relevant experience level dataset
+
+df_filtered <- df %>%
+  filter(experience_level %in% c("Mid-level", "Entry-level"))
+
+# grouping work options to manage sparse data
+
+df_filtered <- df_filtered%>%
+  mutate(work_setting = case_when(work_setting == 'In-person' ~ 'In-person',
+                                  TRUE ~ 'Flexible'))
+
+# creating a dataset for the most recent year
+
+df_filtered_year <- df_filtered%>%
+  filter(work_year == 2023)
+
+```
+
+```{r}
+# chart 1 dataframe
+
+df_chart_1 <- df_filtered_year %>% 
+  group_by(job_category) %>% 
+  summarize(count = n())
+```
+
+```{r}
+# chart 2 dataframe
+
+df_chart_2 <- df_filtered_year %>% 
+  group_by(employment_type) %>% 
+  summarize(count = n())
+
+df_chart_2_f <- df_chart_2 %>%
+  mutate(employment_type = case_when(employment_type == 'Full-time' ~ 'Full-time',
+                                  TRUE ~ 'Other'))
+```
+
+```{r}
+# chart 3 dataframe 
+df_chart_3 <- df %>% 
+  group_by(experience_level) %>% 
+  summarize(count = n())
+```
+
+```{r}
+# chart 4 dataframe 
+
+df_chart_4 <- df_filtered_year %>% 
+  group_by(employee_residence) %>% 
+  summarize(count = n())
+
+df_chart_4 <- df_chart_4 %>% 
+  arrange(desc(count))
+```
+
+```{r}
+# chart 5 dataframe 
+
+df_chart_5 <- df_filtered_year %>% 
+  group_by(company_size) %>% 
+  summarize(count = n())
+
+df_chart_5 <- df_chart_5 %>% 
+  arrange(desc(count))
+```
+
+```{r}
+# chart 6 dataframe 
+
+df_chart_6 <- df_filtered_year %>% 
+  group_by(work_setting) %>% 
+  summarize(count = n())
+
+df_chart_6 <- df_chart_6 %>% 
+  arrange(desc(count))
+```
+
+```{r}
+# chart 7 dataframe 
+
+df_chart_7 <- df_filtered_year %>%
+  group_by(country_group, work_setting) %>%
+  summarize(count = n(), .groups = "keep") %>%
+  arrange(desc(count))
+```
+
+```{r}
+# chart 8 dataframe 
+
+df_chart_8 <- df_filtered_year %>%
+  group_by(company_size, work_setting) %>%
+  summarize(count = n(), .groups = "keep") %>%
+  arrange(desc(count))
+
+```
+
+```{r}
+# chart 9 dataframe 
+
+df_chart_9 <- df %>%
+  mutate(work_setting = case_when(work_setting == 'In-person' ~ 'In-person',
+                                  TRUE ~ 'Flexible')) %>%
+  group_by(work_year, work_setting) %>%
+  summarize(count = n(), .groups = "keep") %>%
+  arrange(desc(count))
+
+df_chart_9_pivot <- df_chart_9 %>%
+  pivot_wider(names_from = work_setting,
+              values_from = count,
+              values_fill = 0)
+
+df_chart_9_pivot <- df_chart_9_pivot %>% 
+  rename(
+    'in_person_roles' = 'In-person',
+    'flexible_roles' = 'Flexible'
+  )
+
+df_chart_9_pivot <- df_chart_9_pivot %>%
+  mutate('%_flexible' = ifelse(in_person_roles + flexible_roles == 0, 
+                               0, 
+                               (flexible_roles / (in_person_roles + flexible_roles)) * 100))
+
+df_chart_9_pivot <- df_chart_9_pivot %>% 
+  mutate(`%_flexible` = round(`%_flexible`, 2))
+```
+
+High Level Overview
+=======================================================================
+
+Column {.tabset .tabset-fade data-width=650}
+-----------------------------------------------------------------------
+
+### What type of roles are available? 
+
+```{r}
+# chart 1
+# Determine the number of unique categories
+num_categories_1 <- length(unique(df_chart_1$job_category))
+
+# Generate a color palette dynamically based on the number of categories
+custom_colours_1 <- brewer.pal(n = num_categories_1, name = "Set1")
+
+chart_1 <- df_chart_1 %>%
+  group_by(job_category) %>%
+  summarise(count = sum(count)) %>%
+  arrange(desc(count)) %>%
+  hchart('column', hcaes(x = job_category, y = count), colorByPoint = TRUE) %>%
+  hc_colors(custom_colours_1) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_tooltip(pointFormat = '<b>Number of Roles: </b> {point.y} <br>') %>%
+  hc_xAxis(title = list(text = 'Job Category',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+  hc_yAxis(title = list(text = 'Count',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+  hc_title(text = 'Data Role Breakdown 2024',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_subtitle(text = 'Distribution of Data Roles by Job Title',
+              style = list(fontSize = '16px')) %>%
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_1
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### {.no-padding} 
+
+```{r}
+# chart 2
+# Determine the number of unique categories
+num_categories_2 <- length(unique(df_chart_2_f$employment_type))
+
+# Generate a color palette dynamically based on the number of categories
+
+custom_colours_2 <- brewer.pal(n = num_categories_2, name = "Set2")
+
+
+chart_2 <- df_chart_2_f %>%
+  group_by(employment_type) %>%
+  summarise(count = sum(count)) %>%
+  hchart('pie', hcaes(x = employment_type, y = count)) %>%
+  hc_colors(custom_colours_2) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_tooltip(pointFormat = '<b>Proportion: </b> {point.percentage:,.2f}%') %>%
+  hc_title(text = 'Contract Split 2024',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_subtitle(text = 'Distribution of Data Science Roles by Contract Type',
+              style = list(fontSize = '16px')) %>%
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_2
+```
+
+### {.no-padding} 
+
+```{r}
+# chart 3
+# Determine the number of unique categories
+num_categories_3 <- length(unique(df_chart_3$experience_level))
+
+# Generate a color palette dynamically based on the number of categories
+custom_colours_3 <- brewer.pal(n = num_categories_3, name = "Set3")
+
+df_chart_3 <- df_chart_3 %>% arrange((count))
+
+# necessary adaptation to get the stacked bars to order themselves
+df_chart_3 <- df_chart_3 %>%
+  mutate(experience_level = factor(experience_level, levels = unique(experience_level)))
+
+
+chart_3 <- df_chart_3 %>%
+  hchart(type = 'column', hcaes(y = count, group = experience_level)) %>%
+  hc_colors(custom_colours_3) %>%
+  hc_plotOptions(column = list(stacking = 'percent')) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_tooltip(headerFormat = '',
+             pointFormat = '<b>{series.name}</b> <br> Proportion: {point.percentage:,.2f}%<br> Count: {point.y}')  %>%
+  hc_yAxis(title = list(text = 'Percentage Split',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+  hc_legend(align = 'center',
+            verticalAlign = 'bottom',
+            layout = 'horizontal',
+            x = 27) %>%
+  hc_title(text = 'Seniority Split 2024',
+           align = 'center',
+           x = 27,
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_subtitle(text = 'Distribution of Data Science Roles by Seniority Level',
+              align = 'center',
+              x = 27,
+              style = list(fontSize = '16px')) %>%
+  hc_xAxis(visible = FALSE) %>%
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_3
+```
+
+
+Role Concentration
+=======================================================================
+
+Column {.tabset .tabset-fade data-width=650}
+-----------------------------------------------------------------------
+
+### Where are these roles based?
+
+```{r}
+# chart 4
+
+# Generate a color palette 
+
+custom_colours_3 <- brewer.pal(n = 4, name = "YlOrRd")
+
+# generating country codes for joining to highcharter code dataframe
+
+df_chart_4 <- as.data.frame(df_chart_4)
+
+df_chart_4$employee_residence <- as.character(df_chart_4$employee_residence)
+
+df_chart_4$iso2 <- countrycode(df_chart_4$employee_residence, "country.name", "iso2c")
+
+df_chart_4_f <- subset(df_chart_4, employee_residence != "United States")
+df_chart_4_f <- subset(df_chart_4_f, employee_residence != "United Kingdom")
+
+
+chart_4 <- highchart() %>%
+  hc_title(text = 'Global Heatmap of Data Based Roles 2024',
+           align = 'center',
+           x = 27,
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_subtitle(text = 'Excluding all Roles in the UK and US (90% of roles in dataset excluded)',
+              align = 'center',
+              x = 27,
+              style = list(fontSize = '16px')) %>%
+  hc_legend(text = 'Count',
+            align = 'center',
+            verticalAlign = 'bottom',
+            layout = 'horizontal',
+            x = 27) %>%
+  hc_add_series_map(
+    
+    map = worldgeojson,
+    df = df_chart_4_f,
+    value = 'count',
+    joinBy = 'iso2',
+    name = 'Heatmap'
+    )  %>% 
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_4
+```
+
+
+Column {data-width=350}
+-----------------------------------------------------------------------
+
+### {.no-padding} 
+
+```{r}
+# chart 5
+# Determine the number of unique categories
+num_categories_5 <- length(unique(df_chart_5$company_size))
+
+# Generate a color palette dynamically based on the number of categories
+
+custom_colours_5 <- brewer.pal(n = num_categories_5, name = "Set1")
+
+chart_5 <- df_chart_5 %>%
+  group_by(company_size) %>%
+  summarise(count = sum(count)) %>%
+  arrange(desc(count)) %>%
+  hchart('column', hcaes(x = company_size, y = count), colorByPoint = TRUE) %>%
+  hc_colors(custom_colours_1) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_tooltip(pointFormat = '<b>Number of Roles: </b> {point.y} <br>') %>%
+  hc_xAxis(title = list(text = 'Job Category',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+  hc_yAxis(title = list(text = 'Count',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+  hc_title(text = 'Comapany Size Breakdown 2024',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_subtitle(text = 'Distribution of Data Science Roles by Company Size',
+              style = list(fontSize = '16px')) %>%
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_5
+```
+
+### {.no-padding} 
+
+```{r}
+# chart 6
+# Determine the number of unique categories
+num_categories_6 <- length(unique(df_chart_5$work_setting))
+
+# Generate a color palette dynamically based on the number of categories
+
+custom_colours_6 <- brewer.pal(n = num_categories_6, name = "Set2")
+
+
+chart_6 <- df_chart_6 %>%
+  group_by(work_setting) %>%
+  summarise(count = sum(count)) %>%
+  hchart('pie', hcaes(x = work_setting, y = count)) %>%
+  hc_colors(custom_colours_5) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_tooltip(pointFormat = '<b>Proportion: </b> {point.percentage:,.2f}%') %>%
+  hc_title(text = 'Work Setting Split 2024',
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_subtitle(text = 'Distribution of Data Science Roles by Work Setting',
+              style = list(fontSize = '16px')) %>%
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_6
+```
+
+Planning around Disability {data-orientation=rows}
+=======================================================================
+
+Row {data-height = 500}
+-----------------------------------------------------------------------
+
+### What are the flexibility trends within data?  
+
+```{r}
+# chart 7 
+
+chart_7 <- hchart(df_chart_9_pivot, "line", hcaes(x = work_year, y = `%_flexible`)) %>%
+  hc_title(text = "Percentage of Flexible Roles Over Time",
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_xAxis(
+    title = list(text = "Year",
+                 style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        )),
+    categories = df_chart_9_pivot$work_year,  # Treat years as categories
+    tickInterval = 1  # Ensure ticks are placed at every year
+  ) %>% 
+  hc_yAxis(title = list(text = "Percentage Flexible",
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+  hc_tooltip(pointFormat = "Year: {point.x}<br>Flexible %: {point.y:.2f}%") %>%
+  hc_add_theme(hc_theme_google()) %>% 
+  hc_chart(zoomType = 'xy') %>% 
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_7
+```
+
+Row {data-height=500}
+-----------------------------------------------------------------------
+
+### {.no-padding} 
+
+```{r}
+# chart 8
+# Determine the number of unique categories
+num_categories_7 <- length(unique(df_chart_7$work_setting))
+
+# Generate a color palette dynamically based on the number of categories
+custom_colours_7 <- brewer.pal(n = num_categories_7, name = "Set2")
+
+# df_chart_3 <- df_chart_3 %>% arrange((count))
+
+# necessary adaptation to get the chart to order itself
+
+df_chart_7 <- df_chart_7 %>%
+  mutate(work_setting = factor(work_setting, levels = unique(work_setting)))
+
+
+chart_8 <- df_chart_7 %>%
+  hchart(type = 'column', hcaes(x = country_group, y = count, group = work_setting)) %>%
+  hc_colors(custom_colours_7) %>%
+  hc_plotOptions(column = list(stacking = 'percent')) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_tooltip(headerFormat = '',
+             pointFormat = '<b>{series.name}</b> <br> Proportion: {point.percentage:,.2f}%<br> Count: {point.y}')  %>%
+  hc_yAxis(title = list(text = 'Percentage Split',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+  hc_xAxis(title = list(text = 'Country Group',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        )),
+           categories = list('United States', 'United Kingdom', 'Other')) %>%
+  hc_legend(align = 'center',
+            verticalAlign = 'bottom',
+            layout = 'horizontal',
+            x = 27) %>%
+  hc_title(text = 'Geographic Location VS Remote Split 2024',
+           align = 'center',
+           x = 27,
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_8
+```
+
+### {.no-padding} 
+
+```{r}
+# chart 9
+
+# Determine the number of unique categories
+num_categories_8 <- length(unique(df_chart_8$work_setting))
+
+# Generate a color palette dynamically based on the number of categories
+custom_colours_8 <- brewer.pal(n = num_categories_8, name = "Set2")
+
+# df_chart_3 <- df_chart_3 %>% arrange((count))
+
+# necessary adaptation to get the chart to order itself
+df_chart_8 <- df_chart_8 %>%
+  mutate(work_setting = factor(work_setting, levels = unique(work_setting)))
+
+
+chart_9 <- df_chart_8 %>%
+  hchart(type = 'column', hcaes(x = company_size, y = count, group = work_setting)) %>%
+  hc_colors(custom_colours_8) %>%
+  hc_plotOptions(column = list(stacking = 'percent')) %>%
+  hc_add_theme(hc_theme_google()) %>%
+  hc_tooltip(headerFormat = '',
+             pointFormat = '<b>{series.name}</b> <br> Proportion: {point.percentage:,.2f}%<br> Count: {point.y}')  %>%
+  hc_yAxis(title = list(text = 'Percentage Split',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+  hc_xAxis(title = list(text = 'Company Size',
+                        style = list(
+                          fontWeight = 'bold',
+                          fontSize = '16px'
+                        ))) %>%
+           #categories = list('United States', 'United Kingdom', 'Other')) %>%
+  hc_legend(align = 'center',
+            verticalAlign = 'bottom',
+            layout = 'horizontal',
+            x = 27) %>%
+  hc_title(text = 'Company Size VS Remote Split 2024',
+           align = 'center',
+           x = 27,
+           style = list(fontSize = '25px', fontWeight = 'bold')) %>%
+  hc_credits(enabled = TRUE, text = '@pannob')
+
+chart_9
+```
