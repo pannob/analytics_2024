@@ -27,7 +27,7 @@ more a task to explore my thought process behind a regression analysis relevant 
     - visualisation: **seaborn/plotly**
     - regression analysis: **sklearn**
 
-## 2) Data Visualisation: Interactive Dashboard with Web Integration
+## 3) Data Visualisation: Interactive Dashboard with Web Integration
 
 File Name: markdownnotebook.Rmd
 
