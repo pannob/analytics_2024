@@ -38,6 +38,7 @@ for sharing data with customers; something I'm keen to explore.
 - R based
     - data visualisation: **highcharter**, **flexdashboard**
     - data wrangling: **tidyverse**, **dplyr**
+      
 ![image](https://github.com/user-attachments/assets/44b11798-f03a-4ba6-81a4-bf0db6a09189)
 
 
